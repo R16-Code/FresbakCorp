@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 11, 2025 at 06:01 PM
+-- Generation Time: Nov 11, 2025 at 06:13 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -50,9 +50,16 @@ CREATE TABLE `orders` (
   `total_price` decimal(10,2) NOT NULL,
   `payment_method` varchar(50) NOT NULL,
   `payment_proof` varchar(255) DEFAULT NULL,
-  `status` enum('pending','diproses','selesai','dibatalkan') NOT NULL DEFAULT 'pending',
+  `status` enum('pending','diproses','dikirim','selesai','dibatalkan') NOT NULL DEFAULT 'pending',
   `order_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `user_id`, `customer_name`, `customer_address`, `customer_contact`, `total_price`, `payment_method`, `payment_proof`, `status`, `order_date`) VALUES
+(6, 2, 'Ridho Nur Maulana', 'jogja kidul', '081234567', 10225000.00, 'Bank Transfer - Mandiri', 'proof_6_69137b403c578.png', 'dikirim', '2025-11-11 18:06:41');
 
 -- --------------------------------------------------------
 
@@ -67,6 +74,14 @@ CREATE TABLE `order_items` (
   `quantity` int NOT NULL,
   `price_at_order` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price_at_order`) VALUES
+(3, 6, 2, 1, 1200000.00),
+(4, 6, 4, 2, 4500000.00);
 
 -- --------------------------------------------------------
 
@@ -90,9 +105,9 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `name`, `description`, `price`, `stock`, `image`, `created_at`) VALUES
 (1, 'Kursi Kayu Jati \"Minimalis\"', 'Kursi santai terbuat dari kayu jati asli pilihan dengan finishing natural. Cocok untuk teras atau ruang tamu.', 750000.00, 12, 'kursi_jati_1.jpg', '2025-11-11 16:09:32'),
-(2, 'Meja Kopi \"Skandinavian\"', 'Meja kopi desain modern Skandinavian. Dilengkapi 2 laci penyimpanan. Bahan Plywood HPL dengan kaki kayu solid.', 1200000.00, 9, 'meja_kopi_skandinavian.jpg', '2025-11-11 16:09:32'),
+(2, 'Meja Kopi \"Skandinavian\"', 'Meja kopi desain modern Skandinavian. Dilengkapi 2 laci penyimpanan. Bahan Plywood HPL dengan kaki kayu solid.', 1200000.00, 8, 'meja_kopi_skandinavian.jpg', '2025-11-11 16:09:32'),
 (3, 'Rak Buku \"Industri\" 5 Tingkat', 'Rak buku tinggi dengan desain industrial. Rangka besi kokoh dan papan kayu solid (mahoni). Kuat menahan beban berat.', 2100000.00, 8, 'rak_buku_industri.jpg', '2025-11-11 16:09:32'),
-(4, 'Sofa \"Chesterfield\" 2 Seater', 'Sofa 2 dudukan model Chesterfield klasik. Bahan kulit sintetis premium warna coklat tua. Busa empuk dan nyaman.', 4500000.00, 2, 'sofa_chesterfield_2.jpg', '2025-11-11 16:09:32'),
+(4, 'Sofa \"Chesterfield\" 2 Seater', 'Sofa 2 dudukan model Chesterfield klasik. Bahan kulit sintetis premium warna coklat tua. Busa empuk dan nyaman.', 4500000.00, 0, 'sofa_chesterfield_2.jpg', '2025-11-11 16:09:32'),
 (5, 'Lampu Lantai \"Edison\" Vintage', 'Lampu lantai (standing lamp) dengan desain vintage, menggunakan bohlam Edison. Memberi kesan hangat pada ruangan.', 850000.00, 18, 'lampu_edison.jpg', '2025-11-11 16:09:32');
 
 -- --------------------------------------------------------
@@ -166,19 +181,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `products`
