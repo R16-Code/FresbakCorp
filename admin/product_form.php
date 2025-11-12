@@ -1,5 +1,6 @@
 <?php
-include 'header_admin.php';
+// Pastikan semua logika PHP diletakkan di SINI, sebelum output HTML/include header.
+require_once '../config.php';
 
 $is_edit = false;
 $product = [
@@ -14,7 +15,7 @@ $message = '';
 $error = '';
 
 // 1. Logika Ambil Data (untuk Edit)
-if (isset($_GET['id'])) {
+if (isset($_GET['id']) && !isset($_POST['product_id'])) {
     $is_edit = true;
     $product_id = $_GET['id'];
     try {
@@ -37,9 +38,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $product_id = $_POST['product_id'] ?? null;
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
-    $price = (int)str_replace(['.', ','], ['', '.'], $_POST['price']); // Membersihkan format Rupiah
+    // Perbaikan: gunakan floatval untuk membersihkan nilai harga
+    $price_str = str_replace('.', '', $_POST['price']);
+    $price_str = str_replace(',', '.', $price_str);
+    $price = (int)floatval($price_str); 
+    
     $stock = (int)$_POST['stock'];
     $current_image = $_POST['current_image'] ?? '';
+    
+    // Tentukan apakah ini mode edit saat POST
+    $is_edit = !empty($product_id);
     
     // Validasi Dasar
     if (empty($name) || $price <= 0) {
@@ -58,7 +66,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     unlink($upload_dir . $current_image);
                 }
                 
-                $image_name = time() . '_' . basename($_FILES['image']['name']);
+                $image_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                $image_name = time() . '_' . uniqid() . '.' . $image_extension;
+                
                 if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $image_name)) {
                     $error = "Gagal mengupload file gambar.";
                 }
@@ -76,14 +86,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute([$name, $description, $price, $stock, $image_name, $product_id]);
                     $_SESSION['message'] = "Produk **" . htmlspecialchars($name) . "** berhasil diperbarui.";
                 } else {
-                    // Tambah Produk Baru
-                    $stmt = $db->prepare("INSERT INTO products (name, description, price, stock, image) VALUES (?, ?, ?, ?, ?)");
+                    // Tambah Produk Baru (Tambahkan is_active = 1 secara default)
+                    $stmt = $db->prepare("INSERT INTO products (name, description, price, stock, image, is_active) VALUES (?, ?, ?, ?, ?, 1)");
                     $stmt->execute([$name, $description, $price, $stock, $image_name]);
                     $_SESSION['message'] = "Produk baru **" . htmlspecialchars($name) . "** berhasil ditambahkan.";
                 }
-                header("Location: products.php");
+                
+                // PENGALIHAN BERHASIL TANPA WARNING
+                header("Location: products.php?status=" . ($is_edit ? 'updated' : 'added'));
                 exit;
             } catch (PDOException $e) {
+                // Hapus gambar baru jika penyimpanan DB gagal
+                if ($image_name != $current_image && file_exists($upload_dir . $image_name)) {
+                    unlink($upload_dir . $image_name);
+                }
                 $error = "Gagal menyimpan data ke database: " . $e->getMessage();
             }
         }
@@ -92,6 +108,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Jika ada error, isi ulang formulir dengan data POST agar user tidak kehilangan input
     $product = array_merge($product, ['name' => $name, 'description' => $description, 'price' => $price, 'stock' => $stock, 'image' => $image_name]);
 }
+
+
+// --- START HTML OUTPUT ---
+include 'header_admin.php';
 
 $title = $is_edit ? 'Edit Produk: ' . htmlspecialchars($product['name']) : 'Tambah Produk Baru';
 ?>

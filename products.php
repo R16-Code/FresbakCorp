@@ -2,7 +2,8 @@
 include 'config.php';
 
 try {
-    $stmt = $db->query("SELECT id, name, price, image, description, stock FROM products ORDER BY id DESC");
+    // MODIFIKASI: Tambahkan kondisi WHERE is_active = 1 untuk hanya menampilkan produk aktif
+    $stmt = $db->query("SELECT id, name, price, image, description, stock FROM products WHERE is_active = 1 ORDER BY id DESC");
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $products = [];

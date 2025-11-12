@@ -1,81 +1,84 @@
 <?php
-include 'config.php';
+require_once 'config.php';
 
-$product = null;
-if (isset($_GET['id'])) {
-    $product_id = $_GET['id'];
-    try {
-        $stmt = $db->prepare("SELECT * FROM products WHERE id = ?");
-        $stmt->execute([$product_id]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // Handle error
-    }
-}
-
-if (!$product) {
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: products.php");
     exit;
 }
 
-$image_path = "uploads/products/" . htmlspecialchars($product['image']);
-$image_src = file_exists($image_path) && !is_dir($image_path) ? $image_path : 'assets/placeholder.jpg';
+$product_id = $_GET['id'];
+$product = null;
+
+try {
+    // Ambil produk HANYA JIKA AKTIF (is_active = 1)
+    $stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND is_active = 1");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Anda bisa menambahkan logging error di sini
+    $product = null;
+}
 
 include 'header.php';
 ?>
 
-<div class="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-
-        <div class="lg:sticky lg:top-24">
-            <div class="bg-gray-100 p-4 rounded-xl shadow-inner">
-                <img src="<?= $image_src ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="w-full h-auto object-contain rounded-lg">
-            </div>
-            <a href="products.php" class="inline-block mt-4 text-sm text-gray-500 hover:text-green-600 transition duration-150">&larr; Kembali ke Daftar Produk</a>
+<?php if (!$product): ?>
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-lg shadow-md text-center">
+        <h1 class="text-2xl font-bold mb-2">Produk Tidak Ditemukan</h1>
+        <p>Maaf, produk yang Anda cari tidak tersedia atau telah dihapus.</p>
+        <a href="products.php" class="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">
+            &larr; Kembali ke Daftar Produk
+        </a>
+    </div>
+<?php else: ?>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white p-8 rounded-xl shadow-lg">
+        
+        <div class="relative overflow-hidden rounded-lg">
+            <?php 
+            $image_path = "uploads/products/" . htmlspecialchars($product['image']);
+            $image_src = file_exists($image_path) && !is_dir($image_path) ? $image_path : 'assets/placeholder.jpg';
+            ?>
+            <img src="<?= $image_src ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="w-full h-full object-cover">
         </div>
 
-        <div class="py-4">
-            <h1 class="text-4xl font-bold text-gray-900 mb-3"><?= htmlspecialchars($product['name']) ?></h1>
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2"><?= htmlspecialchars($product['name']) ?></h1>
+            <p class="text-3xl font-bold text-green-600 mb-6">Rp <?= number_format($product['price'], 0, ',', '.') ?></p>
             
-            <p class="text-gray-500 text-sm mb-6">ID Produk: #<?= $product['id'] ?></p>
-
-            <div class="flex items-baseline mb-6 space-x-4">
-                <span class="text-4xl font-extrabold text-green-600">Rp <?= number_format($product['price'], 0, ',', '.') ?></span>
-                <span class="text-base text-gray-500 font-semibold">
-                    Stok: 
-                    <?php if ($product['stock'] > 10): ?>
-                        <span class="text-green-500">Tersedia Banyak</span>
-                    <?php elseif ($product['stock'] > 0): ?>
-                        <span class="text-yellow-500">Tersisa <?= $product['stock'] ?></span>
-                    <?php else: ?>
-                        <span class="text-red-500">Habis</span>
-                    <?php endif; ?>
-                </span>
-            </div>
-
-            <h2 class="text-2xl font-semibold text-gray-800 mb-3 border-b pb-2">Deskripsi</h2>
-            <div class="text-gray-700 leading-relaxed mb-8">
+            <div class="prose max-w-none text-gray-600 mb-6">
                 <p><?= nl2br(htmlspecialchars($product['description'])) ?></p>
             </div>
 
-            <form action="cart.php" method="POST" class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <p class="text-sm font-medium text-gray-700">
+                    Stok Tersedia: 
+                    <span class="font-bold text-lg <?= $product['stock'] > 0 ? 'text-green-700' : 'text-red-700' ?>">
+                        <?= $product['stock'] > 0 ? $product['stock'] . ' unit' : 'Habis' ?>
+                    </span>
+                </p>
+            </div>
+
+            <form action="cart.php" method="POST">
                 <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
-
+                
                 <div class="flex items-center space-x-4">
-                    <label for="quantity" class="text-lg font-medium text-gray-700">Jumlah:</label>
-                    <input type="number" name="quantity" id="quantity" value="1" min="1" max="<?= $product['stock'] ?>" class="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-green-500 focus:border-green-500" <?= $product['stock'] == 0 ? 'disabled' : '' ?>>
+                    <div class="flex items-center border rounded-lg">
+                        <label for="quantity" class="pl-3 text-sm font-medium text-gray-600">Qty:</label>
+                        <input type="number" name="quantity" id="quantity" value="1" min="1" max="<?= $product['stock'] ?>" 
+                               class="w-16 text-center border-0 focus:ring-0"
+                               <?= $product['stock'] == 0 ? 'disabled' : '' ?>>
+                    </div>
+
+                    <button type="submit" name="add_to_cart" 
+                            class="flex-grow bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 shadow-md flex items-center justify-center"
+                            <?= $product['stock'] == 0 ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : '' ?>>
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <?= $product['stock'] > 0 ? 'Tambah ke Keranjang' : 'Stok Habis' ?>
+                    </button>
                 </div>
-
-                <button type="submit" name="add_to_cart" 
-                    class="w-full lg:w-3/4 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-3 rounded-xl shadow-lg transition duration-300 transform hover:scale-[1.01]"
-                    <?= $product['stock'] == 0 ? 'disabled' : '' ?>>
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    <?= $product['stock'] == 0 ? 'Stok Habis' : 'Tambahkan ke Keranjang' ?>
-                </button>
             </form>
-
         </div>
     </div>
-</div>
+<?php endif; ?>
 
 <?php include 'footer.php'; ?>

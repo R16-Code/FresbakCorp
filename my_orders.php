@@ -68,7 +68,6 @@ include 'header.php';
                 <div class="flex justify-between items-start mb-3 border-b pb-3">
                     <div>
                         <span class="text-sm font-medium text-gray-500">Tanggal Pesan: <?= date('d M Y, H:i', strtotime($order['order_date'])) ?></span>
-                        <h2 class="text-xl font-bold text-gray-800">ID Pesanan: #<?= $order['id'] ?></h2>
                     </div>
                     
                     <span class="px-3 py-1 text-sm font-semibold rounded-full <?= $status_class[$current_status] ?? 'bg-gray-100 text-gray-800' ?>">
@@ -89,9 +88,6 @@ include 'header.php';
                                 Upload Bukti Bayar
                             </a>
                         <?php elseif ($current_status == 'dikirim'): ?>
-                            <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-300 shadow-md">
-                                Lacak Pesanan
-                            </button>
                             <a href="process_order.php?action=confirm_received&order_id=<?= $order['id'] ?>" class="text-green-600 hover:text-green-700 text-sm font-medium block">
                                 Konfirmasi Diterima
                             </a>

@@ -1,9 +1,12 @@
 <?php
 include 'config.php';
 try {
-    $stmt = $db->query("SELECT id, name, price, image FROM products ORDER BY id DESC LIMIT 6");
+    // MODIFIKASI: Tambahkan kondisi WHERE is_active = 1
+    $stmt = $db->query("SELECT id, name, price, image FROM products WHERE is_active = 1 ORDER BY id DESC LIMIT 6");
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+    // Untuk debugging, Anda bisa menampilkan error-nya:
+    // echo "Database Error: " . $e->getMessage();
     $products = [];
 }
 
@@ -30,7 +33,7 @@ include 'header.php';
     <?php if (empty($products)): ?>
         <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded" role="alert">
             <p class="font-bold">Informasi</p>
-            <p>Belum ada produk yang tersedia. Silakan tambahkan produk di halaman Admin.</p>
+            <p>Belum ada produk aktif yang tersedia.</p>
         </div>
     <?php else: ?>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8">

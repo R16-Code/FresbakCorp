@@ -27,9 +27,6 @@
                 <a href="index.php" class="text-gray-600 hover:text-green-600 font-medium transition duration-150">Beranda</a>
                 <a href="products.php" class="text-gray-600 hover:text-green-600 font-medium transition duration-150">Produk</a>
                 <a href="about.php" class="text-gray-600 hover:text-green-600 font-medium transition duration-150">Tentang Kami</a>
-                <?php if (isset($_SESSION['is_admin'])): ?>
-                    <a href="admin/dashboard.php" class="text-gray-600 hover:text-green-600 font-medium transition duration-150">Admin</a>
-                <?php endif; ?>
             </nav>
 
             <div class="flex items-center space-x-4">
