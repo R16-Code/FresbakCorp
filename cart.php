@@ -7,8 +7,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$message = $_SESSION['message'] ?? '';
-unset($_SESSION['message']);
+$message =  ""; 
+if (isset($_SESSION['message'])) {
+    $message = $_SESSION['message'];
+    unset($_SESSION['message']);
+}
 $cart_items = [];
 $subtotal = 0;
 
@@ -16,6 +19,8 @@ $subtotal = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     $product_id = intval($_POST['product_id'] ?? 0);
     $quantity = intval($_POST['quantity'] ?? 1);
+    // Ambil URL redirect jika ada
+    $redirect_url = $_POST['redirect_url'] ?? 'cart.php'; 
 
     if ($product_id > 0 && $quantity > 0) {
         try {
@@ -25,43 +30,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
             $existing_item = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
             if ($existing_item) {
-                // Update quantity jika produk sudah ada
+                // Update quantity
                 $new_quantity = $existing_item['quantity'] + $quantity;
                 $stmt_update = $db->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
                 $stmt_update->execute([$new_quantity, $existing_item['id']]);
-                $message = "Produk berhasil diperbarui di keranjang.";
+                $_SESSION['message'] = "Jumlah produk berhasil diperbarui!";
             } else {
-                // Insert produk baru ke keranjang
+                // Insert baru
                 $stmt_insert = $db->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
                 $stmt_insert->execute([$user_id, $product_id, $quantity]);
-                $message = "Produk berhasil ditambahkan ke keranjang.";
+                $_SESSION['message'] = "Produk berhasil ditambahkan ke keranjang!";
             }
         } catch (PDOException $e) {
-            $message = "Error: " . $e->getMessage();
+            $_SESSION['message'] = "Error: " . $e->getMessage();
         }
     }
+    
+    // Redirect kembali ke halaman asal (atau cart.php jika tidak ada redirect_url)
+    header("Location: " . $redirect_url);
+    exit;
 }
 
+// PROSES UPDATE QUANTITY (via AJAX atau form submission)
 // PROSES UPDATE QUANTITY (via AJAX atau form submission)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_quantity'])) {
     $cart_id = intval($_POST['cart_id'] ?? 0);
     $new_quantity = intval($_POST['new_quantity'] ?? 0);
+    
+    // Ambil URL redirect (default ke cart.php jika tidak ada)
+    $redirect_url = $_POST['redirect_url'] ?? 'cart.php';
 
-    if ($cart_id > 0 && $new_quantity > 0) {
+    if ($cart_id > 0) { // Hapus check $new_quantity > 0 disini agar kita bisa handle penghapusan
         try {
-            // Verifikasi dan update quantity
+            // Verifikasi keranjang milik user
             $stmt_verify = $db->prepare("SELECT id FROM cart WHERE id = ? AND user_id = ?");
             $stmt_verify->execute([$cart_id, $user_id]);
             
             if ($stmt_verify->rowCount() > 0) {
-                $stmt_update = $db->prepare("UPDATE cart SET quantity = ? WHERE id = ? AND user_id = ?");
-                $stmt_update->execute([$new_quantity, $cart_id, $user_id]);
-                $message = "Quantity berhasil diperbarui.";
+                if ($new_quantity > 0) {
+                    // Update jika quantity > 0
+                    $stmt_update = $db->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
+                    $stmt_update->execute([$new_quantity, $cart_id]);
+                    $_SESSION['message'] = "Jumlah berhasil diubah.";
+                } else {
+                    // Hapus item jika quantity 0 (opsional, jika tombol minus ditekan sampai 0)
+                    $stmt_delete = $db->prepare("DELETE FROM cart WHERE id = ?");
+                    $stmt_delete->execute([$cart_id]);
+                    $_SESSION['message'] = "Item dihapus dari keranjang.";
+                }
             }
         } catch (PDOException $e) {
-            $message = "Error: " . $e->getMessage();
+            $_SESSION['message'] = "Error: " . $e->getMessage();
         }
     }
+    
+    // Redirect kembali ke halaman asal
+    header("Location: " . $redirect_url);
+    exit;
 }
 
 try {

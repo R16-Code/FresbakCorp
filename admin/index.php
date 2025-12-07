@@ -91,7 +91,7 @@ $total_users = $db->query("SELECT COUNT(*) AS total FROM users")->fetchColumn() 
                 <?php foreach ($pending_orders as $order): ?>
                     <li class="py-3 flex justify-between items-center">
                         <div>
-                            <p class="font-medium text-gray-700">#<?= $order['id'] ?> - Rp <?= number_format($order['total_price'], 0, ',', '.') ?></p>
+                            <p class="font-medium text-gray-700">Rp <?= number_format($order['total_price'], 0, ',', '.') ?></p>
                             <span class="text-sm text-gray-500"><?= date('d M Y H:i', strtotime($order['order_date'])) ?></span>
                         </div>
                         <a href="orders.php?id=<?= $order['id'] ?>" class="text-sm text-green-600 hover:text-green-700 font-medium py-1 px-3 rounded-full border border-green-200 hover:bg-green-50 transition duration-150">

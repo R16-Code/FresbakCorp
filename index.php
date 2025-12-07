@@ -10,7 +10,33 @@ try {
     $products = [];
 }
 
+$cart_map = []; // Array untuk menyimpan product_id => data keranjang
+if (isset($_SESSION['user_id'])) {
+    try {
+        $stmt_cart = $db->prepare("SELECT id as cart_id, product_id, quantity FROM cart WHERE user_id = ?");
+        $stmt_cart->execute([$_SESSION['user_id']]);
+        while ($row = $stmt_cart->fetch(PDO::FETCH_ASSOC)) {
+            $cart_map[$row['product_id']] = [
+                'qty' => $row['quantity'],
+                'cart_id' => $row['cart_id']
+            ];
+        }
+    } catch (PDOException $e) {
+        // Silent error atau log
+    }
+}
+
 include 'header.php';
+
+if (isset($_SESSION['message'])): ?>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md flex justify-between items-center">
+            <p><?= $_SESSION['message'] ?></p>
+            <button onclick="this.parentElement.remove()" class="text-green-700 font-bold">&times;</button>
+        </div>
+    </div>
+    <?php unset($_SESSION['message']); // Hapus pesan agar tidak muncul terus saat refresh ?>
+<?php endif;
 ?>
 
 <section class="bg-gray-800 rounded-xl shadow-lg mb-12">
@@ -56,14 +82,52 @@ include 'header.php';
                 </a>
 
                 <div class="p-5 pt-0">
-                    <form action="cart.php" method="POST" class="flex justify-end">
-                        <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="submit" name="add_to_cart" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 shadow-md text-sm flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            Beli
-                        </button>
-                    </form>
+                    <?php 
+                    // Cek apakah produk ini ada di keranjang user?
+                    $in_cart = isset($cart_map[$product['id']]);
+                    $qty_now = $in_cart ? $cart_map[$product['id']]['qty'] : 0;
+                    $cart_id = $in_cart ? $cart_map[$product['id']]['cart_id'] : 0;
+                    ?>
+
+                    <?php if (!$in_cart): ?>
+                        <form action="cart.php" method="POST" class="flex justify-end">
+                            <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                            <input type="hidden" name="quantity" value="1">
+                            <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+                            
+                            <button type="submit" name="add_to_cart" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-300 shadow-md text-sm flex items-center">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                Beli
+                            </button>
+                        </form>
+
+                    <?php else: ?>
+                        <div class="flex justify-end items-center space-x-3">
+                            
+                            <form action="cart.php" method="POST">
+                                <input type="hidden" name="cart_id" value="<?= $cart_id ?>">
+                                <input type="hidden" name="update_quantity" value="1">
+                                <input type="hidden" name="new_quantity" value="<?= $qty_now - 1 ?>">
+                                <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+                                
+                                <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold w-8 h-8 rounded-full flex items-center justify-center transition">
+                                    -
+                                </button>
+                            </form>
+
+                            <span class="font-bold text-gray-800 text-lg w-6 text-center"><?= $qty_now ?></span>
+
+                            <form action="cart.php" method="POST">
+                                <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                                <input type="hidden" name="quantity" value="1">
+                                <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+                                
+                                <button type="submit" name="add_to_cart" class="bg-green-500 hover:bg-green-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center transition shadow">
+                                    +
+                                </button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

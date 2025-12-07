@@ -74,7 +74,6 @@ include 'header.php';
 
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
     <h1 class="text-2xl font-bold mb-4">Konfirmasi Pembayaran</h1>
-    <p class="mb-2">Untuk Pesanan ID: <span class="font-bold">#<?= $order_id ?></span></p>
     <p class="mb-6">Total Tagihan: <span class="font-bold text-2xl text-red-600">Rp <?= number_format($order['total_price'], 0, ',', '.') ?></span></p>
 
     <div class="bg-gray-100 p-6 rounded-lg mb-6">

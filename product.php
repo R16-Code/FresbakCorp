@@ -20,7 +20,19 @@ try {
 }
 
 include 'header.php';
+
+if (isset($_SESSION['message'])): ?>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md flex justify-between items-center">
+            <p><?= $_SESSION['message'] ?></p>
+            <button onclick="this.parentElement.remove()" class="text-green-700 font-bold">&times;</button>
+        </div>
+    </div>
+    <?php unset($_SESSION['message']); // Hapus pesan agar tidak muncul terus saat refresh ?>
+<?php endif; 
 ?>
+
+
 
 <?php if (!$product): ?>
     <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-lg shadow-md text-center">
@@ -61,12 +73,14 @@ include 'header.php';
             <form action="cart.php" method="POST">
                 <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
                 
+                <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center border rounded-lg">
                         <label for="quantity" class="pl-3 text-sm font-medium text-gray-600">Qty:</label>
                         <input type="number" name="quantity" id="quantity" value="1" min="1" max="<?= $product['stock'] ?>" 
-                               class="w-16 text-center border-0 focus:ring-0"
-                               <?= $product['stock'] == 0 ? 'disabled' : '' ?>>
+                            class="w-16 text-center border-0 focus:ring-0"
+                            <?= $product['stock'] == 0 ? 'disabled' : '' ?>>
                     </div>
 
                     <button type="submit" name="add_to_cart" 

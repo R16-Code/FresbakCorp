@@ -6,6 +6,7 @@ $is_edit = false;
 $product = [
     'id' => null,
     'name' => '',
+    'category' => '', 
     'description' => '',
     'price' => '',
     'stock' => '',
@@ -13,6 +14,9 @@ $product = [
 ];
 $message = '';
 $error = '';
+
+// [MODIFIKASI] Daftar Kategori Baru Berdasarkan Jenis Benda
+$categories = ['Meja', 'Kursi', 'Lemari', 'Sofa', 'Tempat Tidur', 'Rak', 'Lampu', 'Dekorasi', 'Lainnya'];
 
 // 1. Logika Ambil Data (untuk Edit)
 if (isset($_GET['id']) && !isset($_POST['product_id'])) {
@@ -37,8 +41,9 @@ if (isset($_GET['id']) && !isset($_POST['product_id'])) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $product_id = $_POST['product_id'] ?? null;
     $name = trim($_POST['name']);
+    $category = $_POST['category']; // Ambil input kategori
     $description = trim($_POST['description']);
-    // Perbaikan: gunakan floatval untuk membersihkan nilai harga
+    
     $price_str = str_replace('.', '', $_POST['price']);
     $price_str = str_replace(',', '.', $price_str);
     $price = (int)floatval($price_str); 
@@ -46,7 +51,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stock = (int)$_POST['stock'];
     $current_image = $_POST['current_image'] ?? '';
     
-    // Tentukan apakah ini mode edit saat POST
     $is_edit = !empty($product_id);
     
     // Validasi Dasar
@@ -61,7 +65,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
             if (in_array($_FILES['image']['type'], $allowed_types)) {
                 
-                // Hapus gambar lama jika ini mode edit dan gambar baru diupload
                 if ($is_edit && $current_image && file_exists($upload_dir . $current_image)) {
                     unlink($upload_dir . $current_image);
                 }
@@ -77,26 +80,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
-        // Jika tidak ada error upload, lakukan penyimpanan ke database
+        // Simpan ke Database
         if (!$error) {
             try {
                 if ($is_edit && $product_id) {
-                    // Update Produk
-                    $stmt = $db->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ? WHERE id = ?");
-                    $stmt->execute([$name, $description, $price, $stock, $image_name, $product_id]);
+                    // Update Produk (+Category)
+                    $stmt = $db->prepare("UPDATE products SET name = ?, category = ?, description = ?, price = ?, stock = ?, image = ? WHERE id = ?");
+                    $stmt->execute([$name, $category, $description, $price, $stock, $image_name, $product_id]);
                     $_SESSION['message'] = "Produk **" . htmlspecialchars($name) . "** berhasil diperbarui.";
                 } else {
-                    // Tambah Produk Baru (Tambahkan is_active = 1 secara default)
-                    $stmt = $db->prepare("INSERT INTO products (name, description, price, stock, image, is_active) VALUES (?, ?, ?, ?, ?, 1)");
-                    $stmt->execute([$name, $description, $price, $stock, $image_name]);
+                    // Tambah Produk Baru (+Category)
+                    $stmt = $db->prepare("INSERT INTO products (name, category, description, price, stock, image, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
+                    $stmt->execute([$name, $category, $description, $price, $stock, $image_name]);
                     $_SESSION['message'] = "Produk baru **" . htmlspecialchars($name) . "** berhasil ditambahkan.";
                 }
                 
-                // PENGALIHAN BERHASIL TANPA WARNING
                 header("Location: products.php?status=" . ($is_edit ? 'updated' : 'added'));
                 exit;
             } catch (PDOException $e) {
-                // Hapus gambar baru jika penyimpanan DB gagal
                 if ($image_name != $current_image && file_exists($upload_dir . $image_name)) {
                     unlink($upload_dir . $image_name);
                 }
@@ -105,8 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     
-    // Jika ada error, isi ulang formulir dengan data POST agar user tidak kehilangan input
-    $product = array_merge($product, ['name' => $name, 'description' => $description, 'price' => $price, 'stock' => $stock, 'image' => $image_name]);
+    $product = array_merge($product, ['name' => $name, 'category' => $category, 'description' => $description, 'price' => $price, 'stock' => $stock, 'image' => $image_name]);
 }
 
 
@@ -132,25 +132,39 @@ $title = $is_edit ? 'Edit Produk: ' . htmlspecialchars($product['name']) : 'Tamb
             <input type="hidden" name="current_image" value="<?= $product['image'] ?>">
         <?php endif; ?>
 
-        <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
-            <input type="text" name="name" id="name" value="<?= htmlspecialchars($product['name']) ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Contoh: Sofa Minimalis Ruang Tamu">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
+                <input type="text" name="name" id="name" value="<?= htmlspecialchars($product['name']) ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Contoh: Meja Makan Jati">
+            </div>
+            
+            <div>
+                <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                <select name="category" id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150">
+                    <option value="Lainnya">Pilih Kategori...</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= $cat ?>" <?= ($product['category'] == $cat) ? 'selected' : '' ?>>
+                            <?= $cat ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
 
         <div>
             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-            <textarea name="description" id="description" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Jelaskan detail produk, bahan, ukuran, dan fitur utamanya."><?= htmlspecialchars($product['description']) ?></textarea>
+            <textarea name="description" id="description" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Jelaskan detail produk..."><?= htmlspecialchars($product['description']) ?></textarea>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Harga (Rp)</label>
-                <input type="number" name="price" id="price" value="<?= htmlspecialchars($product['price']) ?>" required min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Cth: 500000 (tanpa titik)">
+                <input type="number" name="price" id="price" value="<?= htmlspecialchars($product['price']) ?>" required min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Cth: 500000">
             </div>
             
             <div>
                 <label for="stock" class="block text-sm font-medium text-gray-700 mb-1">Stok</label>
-                <input type="number" name="stock" id="stock" value="<?= htmlspecialchars($product['stock']) ?>" required min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Jumlah stok tersedia">
+                <input type="number" name="stock" id="stock" value="<?= htmlspecialchars($product['stock']) ?>" required min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150" placeholder="Jumlah stok">
             </div>
         </div>
 
