@@ -84,6 +84,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             Belum punya akun? 
             <a href="register.php" class="font-semibold text-green-600 hover:text-green-800">Daftar di sini</a>
         </p>
+        
+        <div class="mt-6">
+            <a href="index.php" class="block w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2.5 rounded-lg transition duration-200 text-center">
+                Masuk sebagai Tamu
+            </a>
+        </div>
     </div>
 </body>
 </html>
